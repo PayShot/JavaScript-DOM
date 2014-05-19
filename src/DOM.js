@@ -1,9 +1,8 @@
 /*
- * Title         : Document Object Model
- * Author        : Ramzi Komati 
- * Version       : 1.0
+ * Title   : Document Object Model
+ * Author  : Ramzi Komati 
+ * Version : 1.1
  */
-
 
 const NodeType = {
     ELEMENT_NODE   : 1,
@@ -15,14 +14,8 @@ const NodeType = {
 
 const INDENTATION = '  ';
 
-var DOM = function DOM(name)
+var DOM = function DOM()
 {
-    if(typeof name === 'undefined')
-    {
-        name = 'html';
-    }
-
-    
     var html = '',
         indentation_level = 0;
 
@@ -43,13 +36,15 @@ var DOM = function DOM(name)
         }
 
         // Declare public methods
-        this.nodeName   = name;       
-        this.nodeType   = type;       
+        this.id         = '';
+        this.className  = '';
+        this.nodeName   = name;
+        this.nodeType   = type;
         this.attributes = new Array();
-        this.parent     = null;       
+        this.parent     = null;
         this.childs     = new Array();
-        this.innerHTML  = "";         
-        this.text       = "";         
+        this.innerHTML  = '';
+        this.text       = '';
 
         // Append a new chile to the current node
         this.appendChild = function(node)
@@ -83,17 +78,29 @@ var DOM = function DOM(name)
     };
 
     this.doctype = '';
-    this.root = new Node('html', NodeType.DOCUMENT_NODE);
+    this.root = new Node(NodeType.DOCUMENT_NODE);
 
-    DOM.prototype.createElement = function(name, nodeType)
+    this.createElement = function(name, nodeType)
     {
         return new Node(name, nodeType);
     };
 
-    DOM.prototype.appendChild = function(node)
+    this.appendChild = function(node)
     {
-        node.parent = this;
-        this.root.appendChild(node);
+        if(node instanceof DOM)
+        {
+            var dom = node;
+            for(var i = 0; i < dom.root.childs.length; i++)
+            {
+                dom.root.childs[i].parent = this;
+                this.root.appendChild(dom.root.childs[i]);
+            }
+        }
+        else
+        {
+            node.parent = this;
+            this.root.appendChild(node);
+        }
     };
 
     // Traverse the tree in level order
@@ -122,12 +129,32 @@ var DOM = function DOM(name)
         switch(node.nodeType)
         {
             case NodeType.DOCUMENT_NODE:
+            
+                // Traverse the node's childs
+                for(var i = 0; i < node.childs.length; i++)
+                {
+                    indentation_level++;
+                    traverseDOM(node.childs[i]);
+                }
+                break;
+
             case NodeType.ELEMENT_NODE:
 
                 // Write the open tag of the node
-                html += concatinate(indentation_level, INDENTATION);
+                html += concatenate(indentation_level, INDENTATION);
                 html += '<' + node.nodeName;
 
+                // Write the element ID
+                if(node.id != '')
+                {
+                    html += ' id="' + node.id + '"';
+                }
+
+                // Write the element class name
+                if(node.className != '')
+                {
+                    html += ' class="' + node.className + '"';
+                }
                 // Write all the attributes of the node
                 for(var i = 0; i < node.attributes.length; i++)
                 {
@@ -138,7 +165,7 @@ var DOM = function DOM(name)
                 // Write the node's innerHTML
                 if(node.innerHTML != '')
                 {
-                    html += concatinate(indentation_level + 1, INDENTATION);
+                    html += concatenate(indentation_level + 1, INDENTATION);
                     html += node.innerHTML;
                     html += '\n';
                 }
@@ -152,7 +179,7 @@ var DOM = function DOM(name)
             
                 // Write the close tag of the node
 
-                html += concatinate(indentation_level, INDENTATION);
+                html += concatenate(indentation_level, INDENTATION);
 
                 html += '</' + node.nodeName + '>\n';
                 indentation_level--;
@@ -162,9 +189,20 @@ var DOM = function DOM(name)
             case NodeType.ATTRIBUTE_NODE:
 
                 // Write the open tag of the node
-                html += concatinate(indentation_level, INDENTATION);
+                html += concatenate(indentation_level, INDENTATION);
                 html += '<' + node.nodeName;
 
+                // Write the element ID
+                if(node.id != '')
+                {
+                    html += ' id="' + node.id + '"';
+                }
+
+                // Write the element class name
+                if(node.className != '')
+                {
+                    html += ' class="' + node.className + '"';
+                }
                 // Write all the attributes of the node
                 for(var i = 0; i < node.attributes.length; i++)
                 {
@@ -181,7 +219,7 @@ var DOM = function DOM(name)
             case NodeType.COMMENT_NODE:
 
                 // Write the open tag of the node
-                html += concatinate(indentation_level, INDENTATION);
+                html += concatenate(indentation_level, INDENTATION);
                 html += '<!-- ' + node.text + ' -->\n';
                 indentation_level--;
                 break;
@@ -191,7 +229,7 @@ var DOM = function DOM(name)
                 throw new Error('Unknown node type. This error might occured when assigned a numeric value for the node name.');
         }
 
-        function concatinate(n, str)
+        function concatenate(n, str)
         {
             var result = new Array();
             for(var i = 0; i < n; i++)
@@ -201,6 +239,4 @@ var DOM = function DOM(name)
             return result.join('');
         }
     }
-
-    
 };
