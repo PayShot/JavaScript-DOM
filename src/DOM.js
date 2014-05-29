@@ -1,7 +1,6 @@
 /*
  * Title   : Document Object Model
  * Author  : Ramzi Komati 
- * Version : 1.1
  */
 
 const NodeType = {
@@ -42,13 +41,14 @@ var DOM = function DOM()
         this.nodeType   = type;
         this.attributes = new Array();
         this.parent     = null;
-        this.childs     = new Array();
+        this.childs     = new LinkedList();
         this.innerHTML  = '';
         this.text       = '';
 
         // Append a new chile to the current node
         this.appendChild = function(node)
         {
+            node.parent = this;
             this.childs.push(node);
         };
 
@@ -75,6 +75,65 @@ var DOM = function DOM()
             // Return -1 if the attribute is not found
             return -1;
         };
+
+        // Replace innerHTML in node and it's childs
+        this.replace = function(subStr, newSubStr)
+        {
+            this.innerHTML = this.innerHTML.replace(subStr, newSubStr);
+            for(var i = 0; i < this.childs.length(); i++)
+            {
+                this.childs.item(i).replace(subStr, newSubStr);
+            }
+        };
+
+        // Returns the node that contain a substring in it's innerHTML
+        // Returns -1 if the node was not found.
+        this.nodeOf = function(subStr)
+        {
+            if(this.innerHTML.indexOf(subStr) > -1)
+            {
+                return this;
+            }
+            else
+            {
+                for(var i = 0; i < this.childs.length(); i++)
+                {
+                    if(this.childs.item(i).innerHTML.indexOf(subStr) > -1)
+                    {
+                        return this.childs.item(i);
+                    }
+                    else
+                    {
+                        this.childs.item(i).nodeOf(subStr);
+                    }
+                }
+                return -1;
+            }
+        };
+
+        // Split a node into two and add a new node in between
+        this.split = function(index, node)
+        {
+            for(var i = 0; i < this.parent.childs.length(); i++)
+            {
+                if(this.parent.childs.item(i) == this)
+                {
+                    // Add the new node
+                    this.parent.childs.add(node, i + 1);
+
+                    // Add the next node
+                    var nextNode = new Node(this.nodeName);
+                    nextNode.innerHTML = this.innerHTML.substr(index, this.innerHTML.length);
+                    this.parent.childs.add(nextNode, i + 2)
+                    
+                    // Edit the content of the current node
+                    this.innerHTML = this.innerHTML.substr(0, index);
+
+                    // Break the loop
+                    break;
+                }
+            }
+        };
     };
 
     this.doctype = '';
@@ -90,10 +149,10 @@ var DOM = function DOM()
         if(node instanceof DOM)
         {
             var dom = node;
-            for(var i = 0; i < dom.root.childs.length; i++)
+            for(var i = 0; i < dom.root.childs.length(); i++)
             {
-                dom.root.childs[i].parent = this;
-                this.root.appendChild(dom.root.childs[i]);
+                dom.root.childs.item(i).parent = this;
+                this.root.appendChild(dom.root.childs.item(i));
             }
         }
         else
@@ -103,7 +162,7 @@ var DOM = function DOM()
         }
     };
 
-    // Traverse the tree in level order
+    // Convert the tree to HTML
     this.toString = function(node)
     {
         if(this.doctype == '')
@@ -124,6 +183,7 @@ var DOM = function DOM()
         return html;
     };
 
+    // Traverse the tree in level order
     function traverseDOM(node)
     {
         switch(node.nodeType)
@@ -131,10 +191,10 @@ var DOM = function DOM()
             case NodeType.DOCUMENT_NODE:
             
                 // Traverse the node's childs
-                for(var i = 0; i < node.childs.length; i++)
+                for(var i = 0; i < node.childs.length(); i++)
                 {
                     indentation_level++;
-                    traverseDOM(node.childs[i]);
+                    traverseDOM(node.childs.item(i));
                 }
                 break;
 
@@ -171,10 +231,10 @@ var DOM = function DOM()
                 }
 
                 // Traverse the node's childs
-                for(var i = 0; i < node.childs.length; i++)
+                for(var i = 0; i < node.childs.length(); i++)
                 {
                     indentation_level++;
-                    traverseDOM(node.childs[i]);
+                    traverseDOM(node.childs.item(i));
                 }
             
                 // Write the close tag of the node
